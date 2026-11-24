@@ -1,9 +1,9 @@
 import { searchProviders } from './npi'
+import { redditWith } from './server/adapters/reddit'
+import { apiBase, llmEndpoint, loadSettings, NotConfigured } from './settings'
 import { gestation, todayIso } from './pregnancy'
 import { uid, type Update } from './store'
 import type { Action, ChatMsg, Person, State, ToolCall } from './types'
-
-const BASE = '/api/llm/v1'
 
 const fn = (name: string, description: string, properties: Record<string, unknown>, required: string[]) => ({
   type: 'function',
@@ -122,10 +122,27 @@ const tools = [
 ]
 
 async function get(path: string, params: Record<string, string>) {
-  const res = await fetch(`${path}?${new URLSearchParams(params)}`)
+  const base = apiBase()
+  if (base === null) return 'Error: This needs an app server, which is not set up. Tell the user they can add one in Settings.'
+  const res = await fetch(`${base}${path}?${new URLSearchParams(params)}`)
   const data = await res.json()
   if (!res.ok) return `Error: ${data.error ?? res.status}`
   return JSON.stringify(data)
+}
+
+// With a Reddit client ID in Settings, review search goes straight from the browser to Reddit.
+const browserReddit = redditWith(() => {
+  const id = loadSettings().redditClientId
+  return id ? { id } : undefined
+})
+
+async function reviews(path: string, params: Record<string, string>, direct: () => Promise<unknown>) {
+  if (!browserReddit.configured()) return get(path, params)
+  try {
+    return JSON.stringify(await direct())
+  } catch (e) {
+    return `Error: ${e instanceof Error ? e.message : e}`
+  }
 }
 
 function snapshot(s: State, who: Person) {
@@ -259,11 +276,15 @@ export async function chat(state: State, who: Person, userText: string, update: 
     onProgress(m)
   }
 
+  const llm = llmEndpoint()
+  if (!llm) throw new NotConfigured('The assistant needs an AI provider. Add one in Settings.')
+
   for (let round = 0; round < 8; round++) {
-    const res = await fetch(`${BASE}/chat/completions`, {
+    const res = await fetch(llm.url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...llm.headers },
       body: JSON.stringify({
+        ...(llm.model && { model: llm.model }),
         messages: [{ role: 'system', content: system }, { role: 'user', content: `Tracker snapshot:\n${JSON.stringify(snapshot(state, who))}` }, ...history.map(strip)],
         tools,
         temperature: 0.4,
@@ -291,14 +312,18 @@ export async function chat(state: State, who: Person, userText: string, update: 
       const args = JSON.parse(call.function.arguments || '{}')
       let result = 'done'
       if (call.function.name === 'search_providers') {
-        const r = await searchProviders(args)
-        result = r.length
-          ? JSON.stringify(r.slice(0, 5).map((p) => ({ name: p.name, specialty: p.specialty, phone: p.phone, address: p.address, npi: p.npi })))
-          : 'No matches. Try without city, or a shorter name prefix.'
+        try {
+          const r = await searchProviders(args)
+          result = r.length
+            ? JSON.stringify(r.slice(0, 5).map((p) => ({ name: p.name, specialty: p.specialty, phone: p.phone, address: p.address, npi: p.npi })))
+            : 'No matches. Try without city, or a shorter name prefix.'
+        } catch (e) {
+          result = `Error: ${e instanceof Error ? e.message : e}`
+        }
       } else if (call.function.name === 'search_reviews') {
-        result = await get('/api/reviews', { q: args.query })
+        result = await reviews('/api/reviews', { q: args.query }, async () => ({ results: await browserReddit.search(args.query) }))
       } else if (call.function.name === 'read_thread') {
-        result = await get('/api/reviews/thread', { id: args.id })
+        result = await reviews('/api/reviews/thread', { id: args.id }, () => browserReddit.thread(args.id))
       } else if (call.function.name === 'search_products') {
         result = await get('/api/products', { q: args.query })
       } else {

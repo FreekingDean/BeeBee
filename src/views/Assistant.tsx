@@ -1,6 +1,8 @@
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { chat, describeCall, iconFor, START } from '../assistant'
+import { llmEndpoint, useSettings } from '../settings'
 import { type Update } from '../store'
 import type { ChatMsg, Person, State } from '../types'
 import { Md } from '../ui'
@@ -14,6 +16,8 @@ export function Assistant({ state, update, who, ask }: Props) {
   const bottom = useRef<HTMLLIElement>(null)
   const kicked = useRef(false)
   const router = useRouter()
+  const settings = useSettings()
+  const ready = llmEndpoint(settings) !== null
 
   const send = async (userText: string) => {
     if (busy || !userText.trim()) return
@@ -32,7 +36,7 @@ export function Assistant({ state, update, who, ask }: Props) {
   }
 
   useEffect(() => {
-    if (kicked.current || !state.dueDate) return
+    if (kicked.current || !state.dueDate || !ready) return
     if (!ask && state.chat.length > 0) return
     kicked.current = true
     const t = setTimeout(() => {
@@ -45,6 +49,15 @@ export function Assistant({ state, update, who, ask }: Props) {
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: 'smooth' })
   }, [state.chat.length, busy])
+
+  if (!ready)
+    return (
+      <section className="chat">
+        <p className="hint">
+          The assistant needs an AI provider to talk to. Add one in <Link href="/settings">Settings</Link>.
+        </p>
+      </section>
+    )
 
   return (
     <section className="chat">

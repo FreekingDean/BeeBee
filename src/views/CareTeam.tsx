@@ -1,5 +1,7 @@
+import Link from 'next/link'
 import { Fragment, useState } from 'react'
 import { searchableRoles, searchProviders } from '../npi'
+import { apiBase, useSettings } from '../settings'
 import { patch, remove, uid, type Update } from '../store'
 import type { Provider, ProviderRole, State } from '../types'
 import { Card, Empty, Tag } from '../ui'
@@ -87,6 +89,17 @@ function Finder({ state, update }: { state: State; update: Update }) {
   }
 
   const added = (npi?: string) => state.providers.some((p) => p.npi && p.npi === npi)
+  const settings = useSettings()
+
+  if (apiBase(settings) === null)
+    return (
+      <Card title="Find in the national provider registry">
+        <p className="hint">
+          Provider lookup needs an app server, because the registry does not accept requests from a browser. Add one in{' '}
+          <Link href="/settings">Settings</Link>, or add providers by hand above.
+        </p>
+      </Card>
+    )
 
   return (
     <Card title="Find in the national provider registry">
