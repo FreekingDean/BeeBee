@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { calendarConfigured, fetchUpcomingEvents, getCalendarToken, type CalendarEvent } from '../gcal'
+import Link from 'next/link'
+import { fetchUpcomingEvents, getCalendarToken, type CalendarEvent } from '../gcal'
+import { googleClientId, useSettings } from '../settings'
 import { fmtDate, todayIso } from '../pregnancy'
 import { remove, uid, type Update } from '../store'
 import type { Appointment, State } from '../types'
@@ -94,6 +96,7 @@ function CalendarImport({ state, update }: { state: State; update: Update }) {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [status, setStatus] = useState('')
   const imported = (id: string) => state.appointments.some((a) => a.gcalId === id)
+  const settings = useSettings()
 
   const connect = async () => {
     setStatus('connecting…')
@@ -113,12 +116,11 @@ function CalendarImport({ state, update }: { state: State; update: Update }) {
       appointments: [...s.appointments, { id: uid(), gcalId: e.id, title: e.title, date: e.date, time: e.time, notes: e.location }],
     }))
 
-  if (!calendarConfigured)
+  if (!googleClientId(settings))
     return (
       <Card title="Google Calendar">
         <p className="hint">
-          To pull appointments from Google Calendar, create an OAuth client ID in Google Cloud Console and put it in <code>.env</code> as{' '}
-          <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>. See <code>.env.example</code>.
+          To pull appointments from Google Calendar, add a Google OAuth client ID in <Link href="/settings">Settings</Link>.
         </p>
       </Card>
     )

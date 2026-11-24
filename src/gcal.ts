@@ -1,8 +1,5 @@
 import { todayIso } from './pregnancy'
-
-const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-
-export const calendarConfigured = Boolean(clientId)
+import { googleClientId } from './settings'
 
 declare global {
   interface Window {
@@ -36,7 +33,7 @@ export async function getCalendarToken() {
   return new Promise<string>((resolve, reject) => {
     window.google!.accounts.oauth2
       .initTokenClient({
-        client_id: clientId!,
+        client_id: googleClientId(),
         scope: 'https://www.googleapis.com/auth/calendar.readonly',
         callback: (r) => (r.access_token ? resolve(r.access_token) : reject(new Error(r.error ?? 'No token'))),
       })

@@ -176,6 +176,19 @@
   .card > form > footer {
     @apply flex basis-full items-center justify-between pt-2;
   }
+  /* A form that wraps several cards (e.g. Settings). */
+  body > main > form.stack {
+    @apply flex flex-col gap-5;
+  }
+  body > main > form.stack > footer {
+    @apply flex items-center justify-end gap-3;
+  }
+  .card > label {
+    @apply block;
+  }
+  .card > :is(p, label) + :is(p, label) {
+    @apply mt-3;
+  }
   .card > form.stack {
     @apply flex-col items-stretch gap-3;
   }

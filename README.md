@@ -31,6 +31,20 @@ STATIC_EXPORT=1 BASE_PATH=/BeeBee npm run build   # output in ./out
 git checkout src/app/api
 ```
 
-The static site has no server, so features backed by `src/app/api` (the
-assistant's LLM proxy, NPI provider lookup, product and review search) are
-unavailable there. Everything else works fully in the browser.
+The static site has no server. Open the **Settings** tab in the app to connect
+outside services from the browser. Settings are stored per browser.
+
+| Feature | On the static site |
+| --- | --- |
+| AI assistant | Enter any OpenAI-compatible API URL, key and model. Calls go straight from the browser. |
+| Parent reviews (Reddit) | Enter a Reddit "installed app" client ID (no secret). |
+| Google Calendar import | Enter a Google OAuth client ID, or set the `NEXT_PUBLIC_GOOGLE_CLIENT_ID` variable. |
+| Provider lookup, product search | Need an app server: these sites block browser requests. |
+
+### App server
+
+To unlock everything, run the full app (`npm run build && npm start`) anywhere
+reachable, with `CORS_ORIGIN` set to the Pages origin, for example
+`CORS_ORIGIN=https://<owner>.github.io`. Then paste that server's URL into
+**Settings > App server**. Its `.env` keys (LLM, Reddit, Walmart) apply to
+requests that go through it.

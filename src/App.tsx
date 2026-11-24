@@ -12,6 +12,7 @@ import { Baby } from './views/Baby'
 import { CareTeam } from './views/CareTeam'
 import { Library } from './views/Library'
 import { Pediatric } from './views/Pediatric'
+import { Settings } from './views/Settings'
 import { Setup } from './views/Setup'
 import { Shopping } from './views/Shopping'
 import { Today } from './views/Today'
@@ -27,6 +28,7 @@ const tabs = [
   { label: 'Baby stuff', slug: 'baby-stuff' },
   { label: 'Pediatric', slug: 'pediatric' },
   { label: 'Library', slug: 'library' },
+  { label: 'Settings', slug: 'settings' },
 ] as const
 
 export default function App({ slug }: { slug: string }) {
@@ -51,6 +53,7 @@ export default function App({ slug }: { slug: string }) {
     'baby-stuff': <Shopping state={state} update={update} />,
     pediatric: <Pediatric state={state} update={update} />,
     library: <Library state={state} update={update} />,
+    settings: <Settings />,
   }[slug]
 
   return (
