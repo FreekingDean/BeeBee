@@ -128,6 +128,40 @@ describe('applyAction', () => {
     expect(s.tasks[0].done).toBe(true)
   })
 
+  test('sets a valid due date and ignores a malformed one', () => {
+    expect(applyAction(baseState(), { type: 'set_due_date', date: '2027-06-01' }).dueDate).toBe('2027-06-01')
+    expect(applyAction(baseState(), { type: 'set_due_date', date: 'June 1' }).dueDate).toBe('2027-05-27')
+  })
+
+  test('records findings, purchases, questions, and resources', () => {
+    let s = baseState()
+    s = applyAction(s, { type: 'add_finding', title: 'Heartbeat 160 bpm', private: true })
+    s = applyAction(s, { type: 'add_purchase', item: 'Crib', cost: 399, store: 'Babylist' })
+    s = applyAction(s, { type: 'add_question', text: 'After-hours policy?' })
+    s = applyAction(s, { type: 'answer_question', id: s.pediatricQuestions[0].id, answer: 'Nurse line 24/7' })
+    s = applyAction(s, { type: 'add_resource', kind: 'book', title: 'Cribsheet', author: 'Emily Oster' })
+    expect(s.findings[0]).toMatchObject({ title: 'Heartbeat 160 bpm', private: true, date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) })
+    expect(s.purchases[0]).toMatchObject({ item: 'Crib', cost: 399, store: 'Babylist' })
+    expect(s.pediatricQuestions[0].answer).toBe('Nurse line 24/7')
+    expect(s.resources[0]).toMatchObject({ type: 'book', title: 'Cribsheet', fromWeek: 1, done: false })
+  })
+
+  test('updates baby and parent names without blanking them', () => {
+    let s = applyAction(baseState(), { type: 'set_baby', sex: 'girl' })
+    s = applyAction(s, { type: 'set_parent_names', birth: '  ' })
+    expect(s).toMatchObject({ babyName: 'Bean', sex: 'girl', names: { birth: 'A', partner: 'B' } })
+  })
+
+  test('marks bought and read, and removes by kind', () => {
+    let s = applyAction(baseState(), { type: 'add_shopping', item: 'Wipes', category: 'diapering', buyByWeek: 36 })
+    s = applyAction(s, { type: 'mark_bought', id: s.shopping[0].id })
+    expect(s.shopping[0].bought).toBe(true)
+    s = applyAction(s, { type: 'remove_item', kind: 'shopping', id: s.shopping[0].id })
+    s = applyAction(s, { type: 'remove_item', kind: 'task', id: 't1' })
+    expect(s.shopping).toHaveLength(0)
+    expect(s.tasks).toHaveLength(0)
+  })
+
   test('defaults owner and category', () => {
     const s = applyAction(baseState(), { type: 'add_task', title: 'x', category: 'home', startWeek: 1, endWeek: 2 } as never)
     expect(s.tasks[1].owner).toBe('both')

@@ -1,6 +1,9 @@
 import App from '../../App'
 
-export default async function Page({ params }: { params: Promise<{ tab?: string[] }> }) {
+type Props = { params: Promise<{ tab?: string[] }>; searchParams: Promise<{ ask?: string }> }
+
+export default async function Page({ params, searchParams }: Props) {
   const { tab } = await params
-  return <App slug={tab?.[0] ?? 'today'} />
+  const { ask } = await searchParams
+  return <App slug={tab?.[0] ?? 'today'} ask={ask} />
 }

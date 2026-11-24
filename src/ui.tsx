@@ -1,4 +1,23 @@
 import type { ReactNode } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+
+export function Md({ children }: { children: string }) {
+  return (
+    <Markdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        a: ({ children, href }) => (
+          <a href={href} target="_blank" rel="noreferrer">
+            {children}
+          </a>
+        ),
+      }}
+    >
+      {children}
+    </Markdown>
+  )
+}
 
 export function Card({ title, children, right }: { title?: string; children: ReactNode; right?: ReactNode }) {
   return (
@@ -30,18 +49,20 @@ export function Check({
   onDelete?: () => void
 }) {
   return (
-    <label className="check">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span>{children}</span>
+    <li className="check">
+      <label>
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+        <span>{children}</span>
+      </label>
       {onDelete && (
         <button onClick={onDelete} className="ghost">
           remove
         </button>
       )}
-    </label>
+    </li>
   )
 }
 
 export function Tag({ children }: { children: ReactNode }) {
-  return <span className="tag">{children}</span>
+  return <small className="tag">{children}</small>
 }

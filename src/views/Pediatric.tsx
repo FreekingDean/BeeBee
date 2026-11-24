@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { patch, remove, uid, type Update } from '../store'
 import type { State } from '../types'
 import { Card, Empty } from '../ui'
@@ -24,59 +24,70 @@ export function Pediatric({ state, update }: { state: State; update: Update }) {
   }
 
   return (
-    <div className="space-y-4">
+    <>
       <Card title="Pediatrician">
         {peds.length === 0 && <Empty>None picked yet. Add candidates under Care team with the Pediatrician role.</Empty>}
-        {peds.map((p) => (
-          <div key={p.id} className="py-1 text-sm">
-            {p.url ? (
-              <a href={p.url} target="_blank" rel="noreferrer" className="font-medium">
-                {p.name}
-              </a>
-            ) : (
-              <span className="font-medium">{p.name}</span>
-            )}
-            {p.practice && <span className="text-faint"> · {p.practice}</span>}
-            {p.phone && <span className="text-faint"> · {p.phone}</span>}
-          </div>
-        ))}
+        <ul>
+          {peds.map((p) => (
+            <li key={p.id}>
+              <strong>
+                {p.url ? (
+                  <a href={p.url} target="_blank" rel="noreferrer">
+                    {p.name}
+                  </a>
+                ) : (
+                  p.name
+                )}
+                {p.practice && <small> · {p.practice}</small>}
+                {p.phone && <small> · {p.phone}</small>}
+              </strong>
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <Card title="Questions for the prenatal visit">
-        <div className="mb-3 flex gap-2">
-          <input className="flex-1" placeholder="e.g. After-hours policy? Hospital privileges?" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && q && addQ()} />
-          <button className="btn" disabled={!q} onClick={addQ}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            addQ()
+          }}
+        >
+          <input placeholder="e.g. After-hours policy? Hospital privileges?" value={q} onChange={(e) => setQ(e.target.value)} />
+          <button className="btn" disabled={!q}>
             Add
           </button>
-        </div>
+        </form>
         {state.pediatricQuestions.length === 0 && <Empty>Jot down what you want to ask.</Empty>}
-        {state.pediatricQuestions.map((x) => (
-          <div key={x.id} className="row flex-col items-stretch">
-            <div className="flex justify-between">
-              <span>{x.text}</span>
+        <ul>
+          {state.pediatricQuestions.map((x) => (
+            <li key={x.id}>
+              <strong>{x.text}</strong>
+              <input
+                className="inline-note"
+                placeholder="answer…"
+                value={editing[x.id] ?? x.answer ?? ''}
+                onChange={(e) => setEditing({ ...editing, [x.id]: e.target.value })}
+                onBlur={() => update((s) => ({ ...s, pediatricQuestions: patch(s.pediatricQuestions, x.id, { answer: editing[x.id] }) }))}
+              />
               <button className="ghost" onClick={() => update((s) => ({ ...s, pediatricQuestions: remove(s.pediatricQuestions, x.id) }))}>
                 remove
               </button>
-            </div>
-            <input
-              className="inline-note"
-              placeholder="answer…"
-              value={editing[x.id] ?? x.answer ?? ''}
-              onChange={(e) => setEditing({ ...editing, [x.id]: e.target.value })}
-              onBlur={() => update((s) => ({ ...s, pediatricQuestions: patch(s.pediatricQuestions, x.id, { answer: editing[x.id] }) }))}
-            />
-          </div>
-        ))}
+            </li>
+          ))}
+        </ul>
       </Card>
 
       <Card title="Typical first-year visits">
-        {visits.map(([when, what]) => (
-          <div key={when} className="flex gap-3 py-1 text-sm">
-            <span className="w-20 shrink-0 font-medium text-muted">{when}</span>
-            <span>{what}</span>
-          </div>
-        ))}
+        <dl>
+          {visits.map(([when, what]) => (
+            <Fragment key={when}>
+              <dt>{when}</dt>
+              <dd>{what}</dd>
+            </Fragment>
+          ))}
+        </dl>
       </Card>
-    </div>
+    </>
   )
 }

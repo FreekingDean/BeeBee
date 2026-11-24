@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { searchableRoles, searchProviders } from '../npi'
 import { patch, remove, uid, type Update } from '../store'
 import type { Provider, ProviderRole, State } from '../types'
@@ -18,27 +18,34 @@ export function CareTeam({ state, update }: { state: State; update: Update }) {
   }
 
   return (
-    <div className="space-y-4">
+    <>
       <Card title="Care team">
         {state.providers.length === 0 && <Empty>No one yet. Add your OB, hospital, and anyone else below.</Empty>}
         {roles
           .filter((r) => state.providers.some((p) => p.role === r))
           .map((r) => (
-            <div key={r} className="py-2">
+            <Fragment key={r}>
               <h3>{r}</h3>
-              {state.providers
-                .filter((p) => p.role === r)
-                .map((p) => (
-                  <ProviderRow key={p.id} p={p} update={update} />
-                ))}
-            </div>
+              <ul>
+                {state.providers
+                  .filter((p) => p.role === r)
+                  .map((p) => (
+                    <ProviderRow key={p.id} p={p} update={update} />
+                  ))}
+              </ul>
+            </Fragment>
           ))}
       </Card>
 
       <Finder state={state} update={update} />
 
       <Card title="Add by hand">
-        <div className="grid gap-2 sm:grid-cols-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            add()
+          }}
+        >
           <select value={draft.role} onChange={(e) => set({ role: e.target.value as ProviderRole })}>
             {roles.map((r) => (
               <option key={r}>{r}</option>
@@ -49,12 +56,12 @@ export function CareTeam({ state, update }: { state: State; update: Update }) {
           <input placeholder="Phone" value={draft.phone ?? ''} onChange={(e) => set({ phone: e.target.value })} />
           <input placeholder="Website / portal URL" value={draft.url ?? ''} onChange={(e) => set({ url: e.target.value })} />
           <input placeholder="Address" value={draft.address ?? ''} onChange={(e) => set({ address: e.target.value })} />
-        </div>
-        <button className="btn mt-3" disabled={!draft.name} onClick={add}>
-          Add
-        </button>
+          <button className="btn" disabled={!draft.name}>
+            Add
+          </button>
+        </form>
       </Card>
-    </div>
+    </>
   )
 }
 
@@ -75,7 +82,7 @@ function Finder({ state, update }: { state: State; update: Update }) {
       setResults(r)
       setStatus(r.length ? '' : 'No matches. Try fewer filters.')
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : 'Search failed. Is the dev server running?')
+      setStatus(e instanceof Error ? e.message : 'Search failed.')
     }
   }
 
@@ -83,7 +90,12 @@ function Finder({ state, update }: { state: State; update: Update }) {
 
   return (
     <Card title="Find in the national provider registry">
-      <div className="grid gap-2 sm:grid-cols-[auto_auto_1fr_1fr_auto]">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void search()
+        }}
+      >
         <select value={role} onChange={(e) => setRole(e.target.value as ProviderRole)}>
           {searchableRoles.map((r) => (
             <option key={r}>{r}</option>
@@ -95,39 +107,26 @@ function Finder({ state, update }: { state: State; update: Update }) {
           ))}
         </select>
         <input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
-        <input
-          placeholder={role === 'Labor Hospital' ? 'Hospital name' : 'Doctor name'}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && search()}
-        />
-        <button className="btn" onClick={search}>
-          Search
-        </button>
-      </div>
-      {status && <p className="hint mt-2">{status}</p>}
-      <div className="mt-2">
+        <input placeholder={role === 'Labor Hospital' ? 'Hospital name' : 'Doctor name'} value={name} onChange={(e) => setName(e.target.value)} />
+        <button className="btn">Search</button>
+      </form>
+      {status && <p className="hint">{status}</p>}
+      <ul>
         {results.map((r) => (
-          <div key={r.id} className="row items-center">
-            <div>
-              <div className="font-medium">
-                {r.name} {r.specialty && <Tag>{r.specialty}</Tag>}
-              </div>
-              <div className="hint">
-                {r.address}
-                {r.phone && ` · ${r.phone}`}
-              </div>
-            </div>
-            <button
-              className="btn shrink-0"
-              disabled={added(r.npi)}
-              onClick={() => update((s) => ({ ...s, providers: [...s.providers, r] }))}
-            >
+          <li key={r.id}>
+            <strong>
+              {r.name} {r.specialty && <Tag>{r.specialty}</Tag>}
+            </strong>
+            <small>
+              {r.address}
+              {r.phone && ` · ${r.phone}`}
+            </small>
+            <button className="btn" disabled={added(r.npi)} onClick={() => update((s) => ({ ...s, providers: [...s.providers, r] }))}>
               {added(r.npi) ? 'Added' : 'Add'}
             </button>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </Card>
   )
 }
@@ -135,29 +134,24 @@ function Finder({ state, update }: { state: State; update: Update }) {
 function ProviderRow({ p, update }: { p: Provider; update: Update }) {
   const [notes, setNotes] = useState(p.notes ?? '')
   return (
-    <div className="row flex-col items-stretch">
-      <div className="flex items-baseline justify-between">
-        <div>
-          {p.url ? (
-            <a href={p.url} target="_blank" rel="noreferrer" className="font-medium">
-              {p.name}
-            </a>
-          ) : (
-            <span className="font-medium">{p.name}</span>
-          )}
-          {p.practice && <span className="text-faint"> · {p.practice}</span>}
-        </div>
-        <button
-          className="ghost"
-          onClick={() => update((s) => ({ ...s, providers: remove(s.providers, p.id) }))}
-        >
-          remove
-        </button>
-      </div>
-      <div className="hint">
-        {p.phone && <a href={`tel:${p.phone}`} className="mr-3">{p.phone}</a>}
-        {p.address && <span>{p.address}</span>}
-      </div>
+    <li>
+      <strong>
+        {p.url ? (
+          <a href={p.url} target="_blank" rel="noreferrer">
+            {p.name}
+          </a>
+        ) : (
+          p.name
+        )}
+        {p.practice && <small> · {p.practice}</small>}
+      </strong>
+      {(p.phone || p.address) && (
+        <small>
+          {p.phone && <a href={`tel:${p.phone}`}>{p.phone}</a>}
+          {p.phone && p.address && ' · '}
+          {p.address}
+        </small>
+      )}
       <input
         className="inline-note"
         placeholder="notes…"
@@ -165,6 +159,9 @@ function ProviderRow({ p, update }: { p: Provider; update: Update }) {
         onChange={(e) => setNotes(e.target.value)}
         onBlur={() => update((s) => ({ ...s, providers: patch(s.providers, p.id, { notes }) }))}
       />
-    </div>
+      <button className="ghost" onClick={() => update((s) => ({ ...s, providers: remove(s.providers, p.id) }))}>
+        remove
+      </button>
+    </li>
   )
 }

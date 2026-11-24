@@ -1,9 +1,10 @@
+import { babylist } from './adapters/babylist'
 import { reddit } from './adapters/reddit'
 import type { ProductSource, ReviewSource } from './adapters/types'
 import { walmart } from './adapters/walmart'
 
 export const reviewSources: ReviewSource[] = [reddit]
-export const productSources: ProductSource[] = [walmart]
+export const productSources: ProductSource[] = [babylist, walmart]
 
 export const active = <T extends { configured: () => boolean }>(list: T[]) => list.filter((s) => s.configured())
 

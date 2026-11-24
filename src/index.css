@@ -22,15 +22,36 @@
     @apply text-sm font-semibold uppercase tracking-wide text-muted;
   }
   h3 {
-    @apply text-xs font-semibold uppercase text-faint;
+    @apply mt-3 text-xs font-semibold uppercase text-faint;
   }
   a {
     @apply text-primary-dark hover:underline;
   }
+  strong {
+    @apply font-medium;
+  }
+  small {
+    @apply text-xs text-faint;
+  }
+  em {
+    @apply ml-1 text-xs font-medium not-italic;
+  }
+  .now {
+    @apply text-primary;
+  }
+  .overdue {
+    @apply text-amber-600;
+  }
+  button {
+    @apply cursor-pointer;
+  }
   input:not([type="checkbox"]),
   select,
   textarea {
-    @apply rounded-md border border-line bg-white px-2 py-1.5 text-sm focus:border-primary focus:outline-none;
+    @apply min-w-0 rounded-md border border-line bg-white px-2 py-1.5 text-sm focus:border-primary focus:outline-none;
+  }
+  input[type="number"] {
+    @apply w-20;
   }
   input[type="checkbox"] {
     @apply accent-primary;
@@ -39,20 +60,145 @@
     @apply text-sm;
   }
   label > span:first-child {
-    @apply text-muted;
+    @apply block text-muted;
+  }
+  label > span + :is(input, select) {
+    @apply mt-1 w-full;
+  }
+  label.inline {
+    @apply flex items-center gap-1 text-xs;
   }
   details > summary {
     @apply cursor-pointer text-xs text-faint;
   }
+  dl {
+    @apply grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm;
+  }
+  dt {
+    @apply font-medium text-muted;
+  }
+  code {
+    @apply rounded bg-stone-200 px-1 text-[0.85em];
+  }
 }
 
 @layer components {
+  body > main {
+    @apply mx-auto max-w-3xl px-4 pb-24 pt-6 sm:pb-6;
+  }
+  body > main > * + * {
+    @apply mt-4;
+  }
+  .top {
+    @apply flex items-center justify-between;
+  }
+  .top > p {
+    @apply flex items-center gap-3 text-xs text-faint;
+  }
+  main.narrow {
+    @apply max-w-sm pt-16;
+  }
+  main.narrow > h1 {
+    @apply text-center;
+  }
+
+  .tabs {
+    @apply fixed inset-x-0 bottom-0 z-10 flex overflow-x-auto border-t border-line bg-white sm:static sm:rounded-xl sm:border;
+  }
+  .tabs > a {
+    @apply flex-1 whitespace-nowrap px-3 py-3 text-center text-xs font-medium text-muted hover:text-ink hover:no-underline sm:text-sm;
+  }
+  .tabs > a[aria-current] {
+    @apply text-primary-dark sm:bg-primary-soft;
+  }
+
   .card {
     @apply rounded-xl border border-line bg-white p-4 shadow-sm;
   }
   .card > header {
-    @apply mb-3 flex items-center justify-between;
+    @apply mb-3 flex items-center justify-between gap-3;
   }
+  .card > header > fieldset {
+    @apply flex gap-3 text-xs;
+  }
+  .card > header > fieldset > label {
+    @apply flex items-center gap-1;
+  }
+  .card > form {
+    @apply flex flex-wrap items-center gap-2;
+  }
+  .card > form > :is(input, select, textarea) {
+    @apply flex-[1_1_9rem];
+  }
+  .card > form > label:not(.inline) {
+    @apply flex-[1_1_12rem];
+  }
+  .card > form > .wide,
+  .card > form > p {
+    @apply basis-full;
+  }
+  .card > form > footer {
+    @apply flex basis-full items-center justify-between pt-2;
+  }
+  .card > form.stack {
+    @apply flex-col items-stretch;
+  }
+  .card > form + * {
+    @apply mt-3;
+  }
+  :is(.card > ul, .card > details > ul) {
+    @apply list-none;
+  }
+  :is(.card > ul, .card > details > ul) > li {
+    @apply grid grid-cols-[1fr_auto_auto] items-center gap-x-3 border-b border-line-soft py-2 text-sm last:border-0;
+  }
+  :is(.card > ul, .card > details > ul) > li > :is(strong, small, span, input) {
+    @apply col-start-1;
+  }
+  :is(.card > ul, .card > details > ul) > li > :is(strong, small) {
+    @apply block;
+  }
+  :is(.card > ul, .card > details > ul) > li > :is(button, data, time) {
+    @apply col-start-2 row-span-3 row-start-1 self-center;
+  }
+  :is(.card > ul, .card > details > ul) > li > data + button {
+    @apply col-start-3;
+  }
+  :is(.card > ul, .card > details > ul) > li > data {
+    @apply font-medium;
+  }
+  :is(.card > ul, .card > details > ul) > li > time {
+    @apply text-muted;
+  }
+  :is(.card > ul, .card > details > ul) > li .ghost {
+    @apply opacity-0;
+  }
+  :is(.card > ul, .card > details > ul) > li:hover .ghost {
+    @apply opacity-100;
+  }
+  .card li.check {
+    @apply flex items-start gap-3 border-0 py-1.5;
+  }
+  .card li.check > label {
+    @apply flex flex-1 items-start gap-3 text-sm;
+  }
+  .card li.check > label > input {
+    @apply mt-1 h-4 w-4 shrink-0;
+  }
+  .card li.check:has(input:checked) > label > span {
+    @apply text-faint line-through;
+  }
+
+  .hero {
+    @apply rounded-xl bg-primary p-5 text-white shadow;
+  }
+  .hero > p {
+    @apply text-sm opacity-90;
+  }
+  .hero > strong {
+    @apply block text-4xl font-bold;
+  }
+
   .btn {
     @apply rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-dark disabled:opacity-40;
   }
@@ -65,15 +211,6 @@
   .tag {
     @apply rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-muted;
   }
-  .row {
-    @apply flex items-start justify-between gap-3 border-b border-line-soft py-2 text-sm last:border-0;
-  }
-  .row .ghost {
-    @apply opacity-0;
-  }
-  .row:hover .ghost {
-    @apply opacity-100;
-  }
   .hint {
     @apply text-xs text-muted;
   }
@@ -83,52 +220,59 @@
   .inline-note {
     @apply mt-1 w-full rounded-none border-0 bg-transparent p-0 text-xs text-muted placeholder:text-stone-300;
   }
-  .hero {
-    @apply rounded-xl bg-primary p-5 text-white shadow;
-  }
-  .check {
-    @apply flex items-start gap-3 py-1.5;
-  }
-  .check > input {
-    @apply mt-1 h-4 w-4;
-  }
-  .check > span {
-    @apply flex-1 text-sm;
-  }
-  .check:has(> input:checked) > span {
-    @apply text-faint line-through;
-  }
-  .check .ghost {
-    @apply opacity-0;
-  }
-  .check:hover .ghost {
-    @apply opacity-100;
-  }
-  .tabs {
-    @apply fixed inset-x-0 bottom-0 z-10 flex overflow-x-auto border-t border-line bg-white sm:static sm:mb-4 sm:rounded-xl sm:border;
-  }
-  .tabs > a {
-    @apply flex-1 whitespace-nowrap px-3 py-3 text-center text-xs font-medium text-muted hover:text-ink hover:no-underline sm:text-sm;
-  }
-  .tabs > a[aria-current] {
-    @apply text-primary-dark sm:bg-primary-soft;
-  }
-}
 
-@layer components {
   .chat {
     @apply flex flex-col gap-3;
     min-height: 60vh;
   }
   .chat-log {
-    @apply flex flex-1 flex-col gap-2 overflow-y-auto rounded-xl border border-line bg-white p-4 shadow-sm;
+    @apply flex flex-1 list-none flex-col gap-2 overflow-y-auto rounded-xl border border-line bg-white p-4 shadow-sm;
     max-height: 65vh;
   }
   .bubble {
-    @apply max-w-[85%] self-start whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-stone-100 px-3 py-2 text-sm;
+    @apply w-fit max-w-[85%] self-start whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-stone-100 px-3 py-2 text-sm;
   }
   .bubble.me {
     @apply self-end rounded-bl-2xl rounded-br-sm bg-primary text-white;
+  }
+  .md {
+    @apply whitespace-normal text-sm;
+  }
+  .md > * + * {
+    @apply mt-2;
+  }
+  .md ul {
+    @apply list-disc pl-5;
+  }
+  .md ol {
+    @apply list-decimal pl-5;
+  }
+  .md li + li {
+    @apply mt-1;
+  }
+  .md strong {
+    @apply font-semibold;
+  }
+  .md em {
+    @apply ml-0 text-[length:inherit] font-normal italic;
+  }
+  .md pre {
+    @apply overflow-x-auto rounded-md bg-stone-200 p-2 text-xs;
+  }
+  .md pre code {
+    @apply bg-transparent p-0;
+  }
+  .md h1,
+  .md h2,
+  .md h3 {
+    @apply mt-0 text-sm font-semibold normal-case tracking-normal text-ink;
+  }
+  .md table {
+    @apply w-full text-xs;
+  }
+  .md th,
+  .md td {
+    @apply border-b border-line py-1 pr-3 text-left;
   }
   .chat-input {
     @apply flex items-center gap-2;

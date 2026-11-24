@@ -9,12 +9,12 @@ const categories: ShoppingCategory[] = ['for mom', 'hospital bag', 'nursery', 'g
 const blurb: Record<ShoppingCategory, string> = {
   'for mom': 'Recovery and feeding supplies. Have these home before week 37.',
   'hospital bag': 'Packed and by the door by week 36.',
-  nursery: 'Big items first so delivery lead times don\'t bite.',
+  nursery: "Big items first so delivery lead times don't bite.",
   gear: 'Car seat must be installed before you leave the hospital.',
-  diapering: 'Don\'t overbuy newborn size; babies outgrow it in weeks.',
+  diapering: "Don't overbuy newborn size; babies outgrow it in weeks.",
   feeding: 'Check insurance for the pump around week 30.',
   clothing: 'Mostly newborn and 0-3m. Washed before baby arrives.',
-  'bath & health': 'Small stuff that\'s annoying to not have at 2am.',
+  'bath & health': "Small stuff that's annoying to not have at 2am.",
   other: '',
 }
 
@@ -40,25 +40,30 @@ export function Shopping({ state, update }: { state: State; update: Update }) {
   const when = (w: number) => (w <= week ? 'now' : state.dueDate ? `by ${fmtDate(dateForWeek(state.dueDate, w))}` : `by wk ${w}`)
 
   return (
-    <div className="space-y-4">
+    <>
       <Card title="Add an item">
-        <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]">
-          <input placeholder="What" value={item} onChange={(e) => setItem(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && item && addItem()} />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            addItem()
+          }}
+        >
+          <input placeholder="What" value={item} onChange={(e) => setItem(e.target.value)} />
           <select value={category} onChange={(e) => setCategory(e.target.value as ShoppingCategory)}>
             {categories.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>
-          <label className="flex items-center gap-1 text-xs">
-            by wk <input type="number" className="w-16" value={by} onChange={(e) => setBy(+e.target.value)} />
+          <label className="inline">
+            by wk <input type="number" value={by} onChange={(e) => setBy(+e.target.value)} />
           </label>
-          <button className="btn" disabled={!item} onClick={addItem}>
+          <button className="btn" disabled={!item}>
             Add
           </button>
-        </div>
+        </form>
       </Card>
 
-      <div className="hint">{remaining} things left to get</div>
+      <p className="hint">{remaining} things left to get</p>
 
       {categories.map((c) => {
         const items = state.shopping.filter((s) => s.category === c)
@@ -66,65 +71,79 @@ export function Shopping({ state, update }: { state: State; update: Update }) {
         const todo = items.filter((s) => !s.bought).sort((a, b) => a.buyByWeek - b.buyByWeek)
         const done = items.filter((s) => s.bought)
         return (
-          <Card key={c} title={c} right={<span className="hint">{done.length}/{items.length}</span>}>
-            {blurb[c] && <p className="hint mb-2">{blurb[c]}</p>}
+          <Card
+            key={c}
+            title={c}
+            right={
+              <small>
+                {done.length}/{items.length}
+              </small>
+            }
+          >
+            {blurb[c] && <p className="hint">{blurb[c]}</p>}
             {todo.length === 0 && <Empty>All set.</Empty>}
-            {todo.map((s) => (
-              <Check key={s.id} checked={s.bought} onChange={(v) => toggle(s, v)} onDelete={() => update((st) => ({ ...st, shopping: remove(st.shopping, s.id) }))}>
-                {s.url ? (
-                  <a href={s.url} target="_blank" rel="noreferrer">
-                    {s.item}
-                  </a>
-                ) : (
-                  s.item
-                )}{' '}
-                <Tag>{when(s.buyByWeek)}</Tag>
-              </Check>
-            ))}
+            <ul>
+              {todo.map((s) => (
+                <Check key={s.id} checked={s.bought} onChange={(v) => toggle(s, v)} onDelete={() => update((st) => ({ ...st, shopping: remove(st.shopping, s.id) }))}>
+                  {s.url ? (
+                    <a href={s.url} target="_blank" rel="noreferrer">
+                      {s.item}
+                    </a>
+                  ) : (
+                    s.item
+                  )}{' '}
+                  <Tag>{when(s.buyByWeek)}</Tag>
+                </Check>
+              ))}
+            </ul>
             {done.length > 0 && (
-              <details className="mt-1">
+              <details>
                 <summary>{done.length} bought</summary>
-                {done.map((s) => (
-                  <Check key={s.id} checked={s.bought} onChange={(v) => toggle(s, v)}>
-                    {s.item}
-                  </Check>
-                ))}
+                <ul>
+                  {done.map((s) => (
+                    <Check key={s.id} checked={s.bought} onChange={(v) => toggle(s, v)}>
+                      {s.item}
+                    </Check>
+                  ))}
+                </ul>
               </details>
             )}
           </Card>
         )
       })}
 
-      <Card title="Spent" right={<span className="text-sm font-medium">${total.toFixed(2)}</span>}>
-        <div className="mb-3 grid gap-2 sm:grid-cols-4">
+      <Card title="Spent" right={<data value={total}>${total.toFixed(2)}</data>}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            addPurchase()
+          }}
+        >
           <input placeholder="Item" value={p.item} onChange={(e) => setP({ ...p, item: e.target.value })} />
           <input type="number" placeholder="Cost" value={p.cost || ''} onChange={(e) => setP({ ...p, cost: +e.target.value })} />
           <input placeholder="Store" value={p.store ?? ''} onChange={(e) => setP({ ...p, store: e.target.value })} />
-          <div className="flex gap-2">
-            <input type="date" className="flex-1" value={p.date} onChange={(e) => setP({ ...p, date: e.target.value })} />
-            <button className="btn" disabled={!p.item} onClick={addPurchase}>
-              Add
-            </button>
-          </div>
-        </div>
+          <input type="date" value={p.date} onChange={(e) => setP({ ...p, date: e.target.value })} />
+          <button className="btn" disabled={!p.item}>
+            Add
+          </button>
+        </form>
         {state.purchases.length === 0 && <Empty>Log what you actually spent.</Empty>}
-        {[...state.purchases].reverse().map((x) => (
-          <div key={x.id} className="row">
-            <span>
-              {x.item}
-              <span className="text-faint">
-                {x.store && ` · ${x.store}`} · {fmtDate(x.date)}
-              </span>
-            </span>
-            <span className="flex gap-3">
-              ${x.cost.toFixed(2)}
+        <ul>
+          {[...state.purchases].reverse().map((x) => (
+            <li key={x.id}>
+              <strong>{x.item}</strong>
+              <small>
+                {x.store && `${x.store} · `}
+                {fmtDate(x.date)}
+              </small>
+              <data value={x.cost}>${x.cost.toFixed(2)}</data>
               <button className="ghost" onClick={() => update((s) => ({ ...s, purchases: remove(s.purchases, x.id) }))}>
                 remove
               </button>
-            </span>
-          </div>
-        ))}
+            </li>
+          ))}
+        </ul>
       </Card>
-    </div>
+    </>
   )
 }

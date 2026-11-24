@@ -1,14 +1,19 @@
+import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { chat, describeCall, START } from '../assistant'
+import { chat, describeCall, iconFor, START } from '../assistant'
 import { type Update } from '../store'
 import type { ChatMsg, Person, State } from '../types'
+import { Md } from '../ui'
 
-export function Assistant({ state, update, who }: { state: State; update: Update; who: Person }) {
+type Props = { state: State; update: Update; who: Person; ask?: string }
+
+export function Assistant({ state, update, who, ask }: Props) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const bottom = useRef<HTMLDivElement>(null)
+  const bottom = useRef<HTMLLIElement>(null)
   const kicked = useRef(false)
+  const router = useRouter()
 
   const send = async (userText: string) => {
     if (busy || !userText.trim()) return
@@ -27,9 +32,13 @@ export function Assistant({ state, update, who }: { state: State; update: Update
   }
 
   useEffect(() => {
-    if (kicked.current || state.chat.length > 0 || !state.dueDate) return
+    if (kicked.current || !state.dueDate) return
+    if (!ask && state.chat.length > 0) return
     kicked.current = true
-    const t = setTimeout(() => send(START), 0)
+    const t = setTimeout(() => {
+      void send(ask ?? START)
+      if (ask) router.replace('/assistant')
+    }, 0)
     return () => clearTimeout(t)
   })
 
@@ -38,15 +47,15 @@ export function Assistant({ state, update, who }: { state: State; update: Update
   }, [state.chat.length, busy])
 
   return (
-    <div className="chat">
-      <div className="chat-log">
+    <section className="chat">
+      <ol className="chat-log">
         {state.chat.map((m, i) => (
           <Bubble key={i} m={m} />
         ))}
-        {busy && !streaming(state.chat) && <div className="hint">thinking…</div>}
-        {error && <div className="hint text-amber-600">{error}</div>}
-        <div ref={bottom} />
-      </div>
+        {busy && !streaming(state.chat) && <li className="hint">thinking…</li>}
+        {error && <li className="hint overdue">{error}</li>}
+        <li ref={bottom} />
+      </ol>
       <form
         className="chat-input"
         onSubmit={(e) => {
@@ -54,7 +63,7 @@ export function Assistant({ state, update, who }: { state: State; update: Update
           void send(text)
         }}
       >
-        <input placeholder={state.dueDate ? 'Say something…' : 'Set a due date on Today first'} value={text} onChange={(e) => setText(e.target.value)} disabled={busy || !state.dueDate} autoFocus />
+        <input placeholder="Say something…" value={text} onChange={(e) => setText(e.target.value)} disabled={busy} autoFocus />
         <button className="btn" disabled={busy || !text.trim()}>
           Send
         </button>
@@ -62,7 +71,7 @@ export function Assistant({ state, update, who }: { state: State; update: Update
           start over
         </button>
       </form>
-    </div>
+    </section>
   )
 }
 
@@ -70,15 +79,19 @@ const streaming = (c: ChatMsg[]) => c[c.length - 1]?.role === 'assistant' && Boo
 
 function Bubble({ m }: { m: ChatMsg }) {
   if (m.role === 'tool') return null
-  if (m.role === 'user') return m.hidden ? null : <div className="bubble me">{m.content}</div>
+  if (m.role === 'user') return m.hidden ? null : <li className="bubble me">{m.content}</li>
   return (
     <>
       {m.tool_calls?.map((c) => (
-        <div key={c.id} className="hint">
-          ⚙ {describeCall(c)}
-        </div>
+        <li key={c.id} className="hint">
+          {iconFor(c.function.name)} {describeCall(c)}
+        </li>
       ))}
-      {m.content && <div className="bubble">{m.content}</div>}
+      {m.content && (
+        <li className="bubble md">
+          <Md>{m.content}</Md>
+        </li>
+      )}
     </>
   )
 }

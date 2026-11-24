@@ -18,13 +18,13 @@ export function Setup({ state, update }: { state: State; update: Update }) {
       ok: names.birth.trim() && names.partner.trim(),
       body: (
         <>
-          <label className="block">
+          <label>
             <span>Birth parent</span>
-            <input className="mt-1 w-full" autoFocus value={names.birth} onChange={(e) => setNames({ ...names, birth: e.target.value })} />
+            <input autoFocus value={names.birth} onChange={(e) => setNames({ ...names, birth: e.target.value })} />
           </label>
-          <label className="block">
+          <label>
             <span>Partner</span>
-            <input className="mt-1 w-full" value={names.partner} onChange={(e) => setNames({ ...names, partner: e.target.value })} />
+            <input value={names.partner} onChange={(e) => setNames({ ...names, partner: e.target.value })} />
           </label>
         </>
       ),
@@ -33,9 +33,9 @@ export function Setup({ state, update }: { state: State; update: Update }) {
       title: 'What are we calling the baby for now?',
       ok: baby.trim(),
       body: (
-        <label className="block">
+        <label>
           <span>Nickname</span>
-          <input className="mt-1 w-full" autoFocus value={baby} onChange={(e) => setBaby(e.target.value)} placeholder="Beebee, Peanut, Bean…" />
+          <input autoFocus value={baby} onChange={(e) => setBaby(e.target.value)} placeholder="Beebee, Peanut, Bean…" />
         </label>
       ),
     },
@@ -44,15 +44,19 @@ export function Setup({ state, update }: { state: State; update: Update }) {
       ok: dueDate,
       body: (
         <>
-          <label className="block">
+          <label>
             <span>Due date, if you have one</span>
-            <input type="date" className="mt-1 w-full" autoFocus value={due} onChange={(e) => setDue(e.target.value)} />
+            <input type="date" autoFocus value={due} onChange={(e) => setDue(e.target.value)} />
           </label>
-          <label className="block">
+          <label>
             <span>…or first day of your last period</span>
-            <input type="date" className="mt-1 w-full" value={lmp} onChange={(e) => setLmp(e.target.value)} />
+            <input type="date" value={lmp} onChange={(e) => setLmp(e.target.value)} />
           </label>
-          {dueDate && <p className="hint">That puts {baby || 'baby'} at {fmtDate(dueDate)}.</p>}
+          {dueDate && (
+            <p className="hint">
+              That puts {baby || 'baby'} at {fmtDate(dueDate)}.
+            </p>
+          )}
         </>
       ),
     },
@@ -67,28 +71,30 @@ export function Setup({ state, update }: { state: State; update: Update }) {
   }
 
   return (
-    <div className="mx-auto max-w-sm px-4 pt-16">
-      <h1 className="mb-4 text-center">beebee</h1>
+    <main className="narrow">
+      <h1>beebee</h1>
       <Card title={`${step + 1} of ${steps.length}`}>
         <form
-          className="space-y-3"
+          className="stack"
           onSubmit={(e) => {
             e.preventDefault()
             next()
           }}
         >
-          <p className="font-medium">{cur.title}</p>
+          <p>
+            <strong>{cur.title}</strong>
+          </p>
           {cur.body}
-          <div className="flex items-center justify-between pt-2">
+          <footer>
             <button type="button" className="ghost" onClick={() => setStep(step - 1)} disabled={step === 0}>
               {step > 0 ? 'back' : ''}
             </button>
             <button className="btn" disabled={!cur.ok}>
               {last ? 'Start' : 'Next'}
             </button>
-          </div>
+          </footer>
         </form>
       </Card>
-    </div>
+    </main>
   )
 }

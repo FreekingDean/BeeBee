@@ -29,19 +29,20 @@ const tabs = [
   { label: 'Library', slug: 'library' },
 ] as const
 
-export default function App({ slug }: { slug: string }) {
+export default function App({ slug, ask }: { slug: string; ask?: string }) {
   const [state, update, reset, ready] = useStore()
   const [who, setWho] = useWho()
   const router = useRouter()
   const go = (label: string) => router.push(`/${tabs.find((t) => t.label === label)?.slug ?? 'today'}`)
+  const askAssistant = (prompt: string) => router.push(`/assistant?ask=${encodeURIComponent(prompt)}`)
 
   if (!ready) return null
   if (!state.dueDate) return <Setup state={state} update={update} />
   if (!who) return <Picker names={state.names} pick={setWho} />
 
   const page = {
-    today: <Today state={state} update={update} go={go} who={who} />,
-    assistant: <Assistant state={state} update={update} who={who} />,
+    today: <Today state={state} update={update} go={go} ask={askAssistant} who={who} />,
+    assistant: <Assistant state={state} update={update} who={who} ask={ask} />,
     appointments: <Appointments state={state} update={update} />,
     todo: <Todos state={state} update={update} who={who} />,
     'care-team': <CareTeam state={state} update={update} />,
@@ -52,10 +53,10 @@ export default function App({ slug }: { slug: string }) {
   }[slug]
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 sm:pb-6">
-      <header className="mb-4 flex items-center justify-between">
+    <main>
+      <header className="top">
         <h1>beebee</h1>
-        <div className="flex items-center gap-3 text-xs text-faint">
+        <p>
           <span>{state.names[who]}</span>
           <button className="ghost" onClick={() => setWho(other(who))}>
             switch to {state.names[other(who)]}
@@ -63,7 +64,7 @@ export default function App({ slug }: { slug: string }) {
           <button className="ghost" onClick={() => confirm('Reset all data?') && reset()}>
             reset
           </button>
-        </div>
+        </p>
       </header>
 
       <nav className="tabs">
@@ -74,24 +75,24 @@ export default function App({ slug }: { slug: string }) {
         ))}
       </nav>
 
-      {page ?? <Today state={state} update={update} go={go} who={who} />}
-    </div>
+      {page ?? <Today state={state} update={update} go={go} ask={askAssistant} who={who} />}
+    </main>
   )
 }
 
 function Picker({ names, pick }: { names: Record<Person, string>; pick: (p: Person) => void }) {
   return (
-    <div className="mx-auto max-w-sm px-4 pt-24">
-      <h1 className="mb-4 text-center">beebee</h1>
+    <main className="narrow">
+      <h1>beebee</h1>
       <Card title="Who's here?">
-        <div className="grid gap-2">
+        <form className="stack" onSubmit={(e) => e.preventDefault()}>
           {(['birth', 'partner'] as Person[]).map((p) => (
-            <button key={p} className="btn py-3" onClick={() => pick(p)}>
+            <button key={p} type="button" className="btn" onClick={() => pick(p)}>
               {names[p]}
             </button>
           ))}
-        </div>
+        </form>
       </Card>
-    </div>
+    </main>
   )
 }

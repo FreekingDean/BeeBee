@@ -109,6 +109,19 @@ export type Action =
   | { type: 'add_appointment'; title: string; date: string; time?: string }
   | { type: 'add_provider'; role: ProviderRole; name: string; practice?: string; phone?: string; address?: string; npi?: string }
   | { type: 'complete_task'; id: string }
+  | { type: 'set_due_date'; date: string }
+  | { type: 'add_finding'; title: string; detail?: string; date?: string; private?: boolean }
+  | { type: 'set_baby'; name?: string; sex?: State['sex'] }
+  | { type: 'set_parent_names'; birth?: string; partner?: string }
+  | { type: 'add_purchase'; item: string; cost: number; date?: string; store?: string }
+  | { type: 'add_question'; text: string }
+  | { type: 'answer_question'; id: string; answer: string }
+  | { type: 'add_resource'; kind: ResourceType; title: string; author?: string; url?: string; fromWeek?: number }
+  | { type: 'mark_bought'; id: string }
+  | { type: 'mark_read'; id: string }
+  | { type: 'remove_item'; kind: RemovableKind; id: string }
+
+export type RemovableKind = 'provider' | 'appointment' | 'task' | 'shopping' | 'purchase' | 'question' | 'resource'
 
 export type ToolCall = { id: string; function: { name: string; arguments: string } }
 

@@ -23,31 +23,31 @@ export function Appointments({ state, update }: { state: State; update: Update }
   const Row = ({ a }: { a: Appointment }) => {
     const p = state.providers.find((x) => x.id === a.providerId)
     return (
-      <div className="row">
-        <div>
-          <div className="font-medium">{a.title}</div>
-          <div className="hint">
-            {fmtDate(a.date)}
-            {a.time && ` · ${a.time}`}
-            {p && ` · ${p.name}`}
-            {p?.address && ` · ${p.address}`}
-          </div>
-          {a.notes && <div className="hint">{a.notes}</div>}
-        </div>
-        <button
-          className="ghost"
-          onClick={() => update((s) => ({ ...s, appointments: remove(s.appointments, a.id) }))}
-        >
+      <li>
+        <strong>{a.title}</strong>
+        <small>
+          {fmtDate(a.date)}
+          {a.time && ` · ${a.time}`}
+          {p && ` · ${p.name}`}
+          {p?.address && ` · ${p.address}`}
+        </small>
+        {a.notes && <small>{a.notes}</small>}
+        <button className="ghost" onClick={() => update((s) => ({ ...s, appointments: remove(s.appointments, a.id) }))}>
           remove
         </button>
-      </div>
+      </li>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <>
       <Card title="Add appointment">
-        <div className="grid gap-2 sm:grid-cols-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            add()
+          }}
+        >
           <input placeholder="What (e.g. anatomy scan)" value={draft.title} onChange={(e) => set({ title: e.target.value })} />
           <select value={draft.providerId ?? ''} onChange={(e) => set({ providerId: e.target.value || undefined })}>
             <option value="">— with whom —</option>
@@ -59,30 +59,34 @@ export function Appointments({ state, update }: { state: State; update: Update }
           </select>
           <input type="date" value={draft.date} onChange={(e) => set({ date: e.target.value })} />
           <input type="time" value={draft.time ?? ''} onChange={(e) => set({ time: e.target.value })} />
-          <input className="sm:col-span-2" placeholder="Notes / questions to ask" value={draft.notes ?? ''} onChange={(e) => set({ notes: e.target.value })} />
-        </div>
-        <button className="btn mt-3" disabled={!draft.title || !draft.date} onClick={add}>
-          Add
-        </button>
+          <input className="wide" placeholder="Notes / questions to ask" value={draft.notes ?? ''} onChange={(e) => set({ notes: e.target.value })} />
+          <button className="btn" disabled={!draft.title || !draft.date}>
+            Add
+          </button>
+        </form>
       </Card>
 
       <CalendarImport state={state} update={update} />
 
       <Card title="Upcoming">
         {upcoming.length === 0 && <Empty>Nothing scheduled.</Empty>}
-        {upcoming.map((a) => (
-          <Row key={a.id} a={a} />
-        ))}
+        <ul>
+          {upcoming.map((a) => (
+            <Row key={a.id} a={a} />
+          ))}
+        </ul>
       </Card>
 
       {past.length > 0 && (
         <Card title="Past">
-          {past.map((a) => (
-            <Row key={a.id} a={a} />
-          ))}
+          <ul>
+            {past.map((a) => (
+              <Row key={a.id} a={a} />
+            ))}
+          </ul>
         </Card>
       )}
-    </div>
+    </>
   )
 }
 
@@ -112,30 +116,40 @@ function CalendarImport({ state, update }: { state: State; update: Update }) {
   if (!calendarConfigured)
     return (
       <Card title="Google Calendar">
-        <p className="hint text-sm">
+        <p className="hint">
           To pull appointments from Google Calendar, create an OAuth client ID in Google Cloud Console and put it in <code>.env</code> as{' '}
-          <code>VITE_GOOGLE_CLIENT_ID</code>. See <code>.env.example</code>.
+          <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>. See <code>.env.example</code>.
         </p>
       </Card>
     )
 
   return (
-    <Card title="Google Calendar" right={<button className="btn" onClick={connect}>{events.length ? 'Refresh' : 'Connect'}</button>}>
+    <Card
+      title="Google Calendar"
+      right={
+        <button className="btn" onClick={connect}>
+          {events.length ? 'Refresh' : 'Connect'}
+        </button>
+      }
+    >
       {status && <p className="hint">{status}</p>}
-      {events.map((e) => (
-        <div key={e.id} className="row items-center">
-          <span>
-            {e.title}
-            <span className="text-faint">
-              {' '}· {fmtDate(e.date)}
-              {e.time && ` ${e.time}`}
+      <ul>
+        {events.map((e) => (
+          <li key={e.id}>
+            <span>
+              {e.title}
+              <small>
+                {' '}
+                · {fmtDate(e.date)}
+                {e.time && ` ${e.time}`}
+              </small>
             </span>
-          </span>
-          <button className="ghost" disabled={imported(e.id)} onClick={() => add(e)}>
-            {imported(e.id) ? 'added' : 'add'}
-          </button>
-        </div>
-      ))}
+            <button className="ghost" disabled={imported(e.id)} onClick={() => add(e)}>
+              {imported(e.id) ? 'added' : 'add'}
+            </button>
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }

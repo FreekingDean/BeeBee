@@ -49,6 +49,12 @@ const tools = [
   ),
   fn('complete_task', 'Mark an existing task done by id.', { id: { type: 'string' } }, ['id']),
   fn(
+    'set_due_date',
+    'Change the due date, e.g. after a dating ultrasound moves it. Confirm the new date with the user first.',
+    { date: { type: 'string', description: 'YYYY-MM-DD' } },
+    ['date'],
+  ),
+  fn(
     'add_appointment',
     'Add an appointment.',
     { title: { type: 'string' }, date: { type: 'string', description: 'YYYY-MM-DD' }, time: { type: 'string', description: 'HH:MM' } },
@@ -66,6 +72,41 @@ const tools = [
     ['item', 'buyByWeek'],
   ),
   fn(
+    'add_finding',
+    'Record a finding: scan result, measurement, test result, heartbeat, weight.',
+    {
+      title: { type: 'string', description: 'e.g. "Heartbeat 160 bpm", "NIPT low risk"' },
+      detail: { type: 'string' },
+      date: { type: 'string', description: 'YYYY-MM-DD, defaults to today' },
+      private: { type: 'boolean', description: 'Only the birth parent can see it' },
+    },
+    ['title'],
+  ),
+  fn('set_baby', "Update the baby's nickname or sex.", { name: { type: 'string' }, sex: { type: 'string', enum: ['girl', 'boy', 'unknown'] } }, []),
+  fn('set_parent_names', 'Update what the two parents are called.', { birth: { type: 'string' }, partner: { type: 'string' } }, []),
+  fn(
+    'add_purchase',
+    'Log something that was actually bought and what it cost.',
+    { item: { type: 'string' }, cost: { type: 'number' }, date: { type: 'string', description: 'YYYY-MM-DD' }, store: { type: 'string' } },
+    ['item', 'cost'],
+  ),
+  fn('add_question', 'Add a question to ask the pediatrician.', { text: { type: 'string' } }, ['text']),
+  fn('answer_question', 'Record the answer to a pediatrician question by id.', { id: { type: 'string' }, answer: { type: 'string' } }, ['id', 'answer']),
+  fn(
+    'add_resource',
+    'Add a book, podcast, or website to the library.',
+    { kind: { type: 'string', enum: ['book', 'podcast', 'site'] }, title: { type: 'string' }, author: { type: 'string' }, url: { type: 'string' }, fromWeek: { type: 'integer' } },
+    ['kind', 'title'],
+  ),
+  fn('mark_bought', 'Mark a shopping item as bought by id.', { id: { type: 'string' } }, ['id']),
+  fn('mark_read', 'Mark a library resource as finished by id.', { id: { type: 'string' } }, ['id']),
+  fn(
+    'remove_item',
+    'Remove something by id. Confirm with the user first.',
+    { kind: { type: 'string', enum: ['provider', 'appointment', 'task', 'shopping', 'purchase', 'question', 'resource'] }, id: { type: 'string' } },
+    ['kind', 'id'],
+  ),
+  fn(
     'search_reviews',
     'Search real parent discussions (Reddit parenting subs) for opinions on a product or brand. Returns threads with id, title, excerpt, score.',
     { query: { type: 'string', description: 'e.g. "Spectra S1 vs Medela pump"' } },
@@ -74,7 +115,7 @@ const tools = [
   fn('read_thread', 'Read a discussion thread from search_reviews in full: post body and top comments.', { id: { type: 'string' } }, ['id']),
   fn(
     'search_products',
-    'Search retailer catalogs for a product. Returns name, price, rating, review count, and link.',
+    'Search baby-product catalogs (Babylist, plus Walmart if configured). Returns name, price, summary, and link.',
     { query: { type: 'string' } },
     ['query'],
   ),
@@ -99,13 +140,17 @@ function snapshot(s: State, who: Person) {
     dueDate: s.dueDate,
     week,
     homeState: homeState ?? 'unknown, ask if needed',
-    careTeam: s.providers.map((p) => ({ role: p.role, name: p.name, practice: p.practice })),
-    upcomingAppointments: s.appointments.filter((a) => a.date >= todayIso()).map((a) => ({ title: a.title, date: a.date })),
+    baby: { name: s.babyName, sex: s.sex },
+    careTeam: s.providers.map((p) => ({ id: p.id, role: p.role, name: p.name, practice: p.practice })),
+    upcomingAppointments: s.appointments.filter((a) => a.date >= todayIso()).map((a) => ({ id: a.id, title: a.title, date: a.date })),
     tasksSlipped: open.filter((t) => t.endWeek < week).map((t) => ({ id: t.id, title: t.title, by: t.endWeek })),
     tasksNow: open.filter((t) => t.startWeek <= week && t.endWeek >= week).map((t) => ({ id: t.id, title: t.title, owner: t.owner })),
-    tasksNext4Weeks: open.filter((t) => t.startWeek > week && t.startWeek <= week + 4).map((t) => t.title),
-    shoppingDueSoon: s.shopping.filter((x) => !x.bought && x.buyByWeek <= week + 4).map((x) => x.item),
-    recentFindings: s.findings.filter((f) => who === 'birth' || !f.private).slice(-5).map((f) => `${f.date} ${f.title}`),
+    tasksNext4Weeks: open.filter((t) => t.startWeek > week && t.startWeek <= week + 4).map((t) => ({ id: t.id, title: t.title })),
+    shoppingDueSoon: s.shopping.filter((x) => !x.bought && x.buyByWeek <= week + 4).map((x) => ({ id: x.id, item: x.item })),
+    recentFindings: s.findings.filter((f) => who === 'birth' || !f.private).slice(-5).map((f) => ({ id: f.id, date: f.date, title: f.title })),
+    pediatricQuestions: s.pediatricQuestions.map((q) => ({ id: q.id, text: q.text, answered: Boolean(q.answer) })),
+    unreadResources: s.resources.filter((r) => !r.done).map((r) => ({ id: r.id, kind: r.type, title: r.title })),
+    spent: s.purchases.reduce((n, p) => n + p.cost, 0),
   }
 }
 
@@ -117,12 +162,39 @@ How to help:
 - If they mention a practice or group, store it in the practice field.
 - When they say they've done something, use complete_task on the matching task id.
 - When they mention a date for something, add_appointment.
+- When they share a result from a scan, test, or visit (heartbeat, measurements, NIPT, glucose, weight), add_finding so it's remembered.
+- When they say they bought something, mark_bought if it's on the list and add_purchase with the cost if they mention one.
 - When they want help picking a product (pump, car seat, stroller…): search_reviews for what real parents say, read_thread on the 1-2 most relevant threads, then search_products for current price and rating. Recommend 2-3 options with one line each on why, with price. Offer to add the pick to their shopping list with add_shopping including the url.
 - If a search tool says it is not configured, say so plainly and tell them which .env keys enable it.
 - After acting, confirm in one line and move to the next useful thing or ask if there's anything else.
 - Never give diagnostic medical advice; point to their OB for anything clinical.`
 
 export const START = '(Start the conversation. Greet briefly and raise the most important thing.)'
+
+const icons: Record<string, string> = {
+  search_providers: '🔍',
+  add_provider: '🩺',
+  add_task: '📝',
+  complete_task: '✅',
+  add_appointment: '📅',
+  set_due_date: '🗓️',
+  add_finding: '🩻',
+  set_baby: '👶',
+  set_parent_names: '👪',
+  add_purchase: '💸',
+  add_question: '❓',
+  answer_question: '💡',
+  add_resource: '📚',
+  mark_bought: '🛍️',
+  mark_read: '📗',
+  remove_item: '🗑️',
+  add_shopping: '🛒',
+  search_reviews: '💬',
+  read_thread: '📖',
+  search_products: '🏷️',
+}
+
+export const iconFor = (name: string) => icons[name] ?? '⚙️'
 
 export function describeCall(c: ToolCall) {
   let a: Record<string, string>
@@ -142,6 +214,28 @@ export function describeCall(c: ToolCall) {
       return 'Marked a task done'
     case 'add_appointment':
       return `Added appointment: ${a.title} on ${a.date}`
+    case 'set_due_date':
+      return `Due date changed to ${a.date}`
+    case 'add_finding':
+      return `Recorded finding: ${a.title}`
+    case 'set_baby':
+      return 'Updated baby details'
+    case 'set_parent_names':
+      return 'Updated parent names'
+    case 'add_purchase':
+      return `Logged purchase: ${a.item}`
+    case 'add_question':
+      return `Added pediatrician question: ${a.text}`
+    case 'answer_question':
+      return 'Recorded an answer'
+    case 'add_resource':
+      return `Added to library: ${a.title}`
+    case 'mark_bought':
+      return 'Marked an item bought'
+    case 'mark_read':
+      return 'Marked a resource finished'
+    case 'remove_item':
+      return `Removed a ${a.kind}`
     case 'add_shopping':
       return `Added to shopping: ${a.item}`
     case 'search_reviews':
@@ -255,7 +349,50 @@ export function applyAction(s: State, a: Action): State {
       return { ...s, providers: [...s.providers, { id: uid(), role: a.role, name: a.name, practice: a.practice, phone: a.phone, address: a.address, npi: a.npi }] }
     case 'complete_task':
       return { ...s, tasks: s.tasks.map((t) => (t.id === a.id ? { ...t, done: true } : t)) }
+    case 'set_due_date':
+      return isoDate(a.date) ? { ...s, dueDate: a.date } : s
+    case 'add_finding':
+      return { ...s, findings: [...s.findings, { id: uid(), title: a.title, detail: a.detail, date: isoDate(a.date) ? a.date! : todayIso(), private: a.private }] }
+    case 'set_baby':
+      return { ...s, babyName: a.name?.trim() || s.babyName, sex: a.sex ?? s.sex }
+    case 'set_parent_names':
+      return { ...s, names: { birth: a.birth?.trim() || s.names.birth, partner: a.partner?.trim() || s.names.partner } }
+    case 'add_purchase':
+      return { ...s, purchases: [...s.purchases, { id: uid(), item: a.item, cost: Number(a.cost) || 0, date: isoDate(a.date) ? a.date! : todayIso(), store: a.store }] }
+    case 'add_question':
+      return { ...s, pediatricQuestions: [...s.pediatricQuestions, { id: uid(), text: a.text }] }
+    case 'answer_question':
+      return { ...s, pediatricQuestions: s.pediatricQuestions.map((q) => (q.id === a.id ? { ...q, answer: a.answer } : q)) }
+    case 'add_resource':
+      return { ...s, resources: [...s.resources, { id: uid(), type: a.kind, title: a.title, author: a.author, url: a.url, fromWeek: a.fromWeek ?? 1, done: false }] }
+    case 'mark_bought':
+      return { ...s, shopping: s.shopping.map((x) => (x.id === a.id ? { ...x, bought: true } : x)) }
+    case 'mark_read':
+      return { ...s, resources: s.resources.map((r) => (r.id === a.id ? { ...r, done: true } : r)) }
+    case 'remove_item': {
+      const drop = <T extends { id: string }>(list: T[]) => list.filter((x) => x.id !== a.id)
+      switch (a.kind) {
+        case 'provider':
+          return { ...s, providers: drop(s.providers) }
+        case 'appointment':
+          return { ...s, appointments: drop(s.appointments) }
+        case 'task':
+          return { ...s, tasks: drop(s.tasks) }
+        case 'shopping':
+          return { ...s, shopping: drop(s.shopping) }
+        case 'purchase':
+          return { ...s, purchases: drop(s.purchases) }
+        case 'question':
+          return { ...s, pediatricQuestions: drop(s.pediatricQuestions) }
+        case 'resource':
+          return { ...s, resources: drop(s.resources) }
+        default:
+          return s
+      }
+    }
     default:
       return s
   }
 }
+
+const isoDate = (d?: string) => Boolean(d && /^\d{4}-\d{2}-\d{2}$/.test(d))
