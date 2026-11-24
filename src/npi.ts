@@ -1,3 +1,4 @@
+import { apiBase, needsServer } from './settings'
 import { uid } from './store'
 import type { Provider, ProviderRole } from './types'
 
@@ -51,7 +52,9 @@ export async function searchProviders(q: { role: ProviderRole; state: string; ci
   const params = new URLSearchParams({ version: '2.1', limit: '50', state: q.state, ...byName })
   if (!Object.keys(byName).length) params.set('taxonomy_description', taxonomy[q.role] ?? '')
   if (q.city) params.set('city', q.city.trim())
-  const res = await fetch(`/api/npi?${params}`)
+  const base = apiBase()
+  if (base === null) throw needsServer('Provider lookup')
+  const res = await fetch(`${base}/api/npi?${params}`)
   const data = (await res.json()) as { results?: NpiResult[]; Errors?: { description: string }[] }
   if (data.Errors?.length) throw new Error(data.Errors[0].description)
   const all = data.results ?? []

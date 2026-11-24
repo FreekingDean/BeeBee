@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import App from '../../App'
 
-const slugs = ['today', 'assistant', 'appointments', 'todo', 'care-team', 'baby', 'baby-stuff', 'pediatric', 'library']
+const slugs = ['today', 'assistant', 'appointments', 'todo', 'care-team', 'baby', 'baby-stuff', 'pediatric', 'library', 'settings']
 
 export function generateStaticParams() {
   return [{ tab: [] }, ...slugs.map((s) => ({ tab: [s] }))]
