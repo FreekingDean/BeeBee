@@ -1,9 +1,19 @@
+import { Suspense } from 'react'
 import App from '../../App'
 
-type Props = { params: Promise<{ tab?: string[] }>; searchParams: Promise<{ ask?: string }> }
+const slugs = ['today', 'assistant', 'appointments', 'todo', 'care-team', 'baby', 'baby-stuff', 'pediatric', 'library']
 
-export default async function Page({ params, searchParams }: Props) {
+export function generateStaticParams() {
+  return [{ tab: [] }, ...slugs.map((s) => ({ tab: [s] }))]
+}
+
+type Props = { params: Promise<{ tab?: string[] }> }
+
+export default async function Page({ params }: Props) {
   const { tab } = await params
-  const { ask } = await searchParams
-  return <App slug={tab?.[0] ?? 'today'} ask={ask} />
+  return (
+    <Suspense>
+      <App slug={tab?.[0] ?? 'today'} />
+    </Suspense>
+  )
 }
