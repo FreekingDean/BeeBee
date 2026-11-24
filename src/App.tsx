@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { other, useWho } from './session'
 import { useStore } from './store'
 import type { Person } from './types'
@@ -29,7 +29,8 @@ const tabs = [
   { label: 'Library', slug: 'library' },
 ] as const
 
-export default function App({ slug, ask }: { slug: string; ask?: string }) {
+export default function App({ slug }: { slug: string }) {
+  const ask = useSearchParams().get('ask') ?? undefined
   const [state, update, reset, ready] = useStore()
   const [who, setWho] = useWho()
   const router = useRouter()
