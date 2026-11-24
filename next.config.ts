@@ -7,6 +7,7 @@ const basePath = process.env.BASE_PATH ?? ''
 
 const config: NextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   ...(staticExport && {
     output: 'export',
     basePath,
