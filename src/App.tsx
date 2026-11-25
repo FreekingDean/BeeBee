@@ -61,19 +61,26 @@ export default function App({ slug }: { slug: string }) {
       <header className="top">
         <h1>beebee</h1>
         <p>
-          <span>{state.names[who]}</span>
-          <button className="ghost" onClick={() => setWho(other(who))}>
-            switch to {state.names[other(who)]}
-          </button>
-          <button className="ghost" onClick={() => confirm('Reset all data?') && reset()}>
-            reset
+          <span className="who">
+            {state.names[who]}
+            <button onClick={() => setWho(other(who))} title={`Switch to ${state.names[other(who)]}`}>
+              switch
+            </button>
+          </span>
+          <button className="ghost" onClick={() => confirm('Reset all data? This cannot be undone.') && reset()}>
+            Reset
           </button>
         </p>
       </header>
 
-      <nav className="tabs">
+      <nav className="tabs" aria-label="Sections">
         {tabs.map((t) => (
-          <Link key={t.slug} href={`/${t.slug}`} aria-current={t.slug === slug ? 'page' : undefined}>
+          <Link
+            key={t.slug}
+            href={`/${t.slug}`}
+            aria-current={t.slug === slug ? 'page' : undefined}
+            ref={t.slug === slug ? (el) => el?.scrollIntoView({ block: 'nearest', inline: 'center' }) : undefined}
+          >
             {t.label}
           </Link>
         ))}

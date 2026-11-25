@@ -11,6 +11,7 @@ const corsOrigin = process.env.CORS_ORIGIN
 
 const config: NextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   env: { NEXT_PUBLIC_STATIC_EXPORT: staticExport ? '1' : '' },
   ...(!staticExport &&
     corsOrigin && {

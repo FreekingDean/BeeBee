@@ -62,6 +62,12 @@ export function Assistant({ state, update, who, ask }: Props) {
   return (
     <section className="chat">
       <ol className="chat-log">
+        {state.chat.length === 0 && !busy && (
+          <li className="chat-empty">
+            <strong>Ask anything about the pregnancy or your plan.</strong>
+            <span>For example: “What should we be doing this week?” or “Help me pick a pediatrician.”</span>
+          </li>
+        )}
         {state.chat.map((m, i) => (
           <Bubble key={i} m={m} />
         ))}
@@ -81,7 +87,7 @@ export function Assistant({ state, update, who, ask }: Props) {
           Send
         </button>
         <button type="button" className="ghost" onClick={() => confirm('Clear the conversation?') && update((s) => ({ ...s, chat: [] }))}>
-          start over
+          Start over
         </button>
       </form>
     </section>

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import '../index.css'
 
 export const metadata: Metadata = { title: 'beebee' }
-export const viewport: Viewport = { width: 'device-width', initialScale: 1 }
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#f5f5f4' }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

@@ -44,17 +44,17 @@ export function Today({ state, update, go, ask, who }: Props) {
         <strong>
           {week}w {day}d
         </strong>
-        <p>{daysLeft > 0 ? `${daysLeft} days until ${fmtDate(state.dueDate)}` : `Due ${fmtDate(state.dueDate)}`}</p>
+        <p className="due">{daysLeft > 0 ? `${daysLeft} days until ${fmtDate(state.dueDate)}` : `Due ${fmtDate(state.dueDate)}`}</p>
       </header>
 
       {suggestions.length > 0 && (
-        <Card title="Suggested next steps" right={<button onClick={() => go('Assistant')} className="link">open chat</button>}>
+        <Card title="Suggested next steps" right={<button onClick={() => go('Assistant')} className="link">Open chat</button>}>
           <ul>
             {suggestions.map((x) => (
               <li key={x.title}>
                 <strong>{x.title}</strong>
                 <small>{x.why}</small>
-                <button className="btn" onClick={() => ask(x.prompt)}>
+                <button className="btn soft" onClick={() => ask(x.prompt)}>
                   Let's do it
                 </button>
               </li>
@@ -63,7 +63,7 @@ export function Today({ state, update, go, ask, who }: Props) {
         </Card>
       )}
 
-      <Card title="Next appointments" right={<button onClick={() => go('Appointments')} className="link">all</button>}>
+      <Card title="Next appointments" right={<button onClick={() => go('Appointments')} className="link">See all</button>}>
         {upcoming.length === 0 && <Empty>Nothing booked. Add one under Appointments.</Empty>}
         <ul>
           {upcoming.map((a) => (
@@ -93,7 +93,7 @@ export function Today({ state, update, go, ask, who }: Props) {
         </Card>
       )}
 
-      <Card title="This week, for you" right={<button onClick={() => go('To-do')} className="link">all</button>}>
+      <Card title="This week, for you" right={<button onClick={() => go('To-do')} className="link">See all</button>}>
         {now.length === 0 && <Empty>Nothing due this week. Enjoy it.</Empty>}
         <ul>
           {now.map((t) => (
@@ -133,7 +133,7 @@ export function Today({ state, update, go, ask, who }: Props) {
       )}
 
       {toBuy.length > 0 && (
-        <Card title="Buy soon" right={<button onClick={() => go('Baby stuff')} className="link">all</button>}>
+        <Card title="Buy soon" right={<button onClick={() => go('Baby stuff')} className="link">See all</button>}>
           <ul>
             {toBuy.map((s) => (
               <Check key={s.id} checked={s.bought} onChange={(v) => update((st) => ({ ...st, shopping: patch(st.shopping, s.id, { bought: v }) }))}>
@@ -145,7 +145,7 @@ export function Today({ state, update, go, ask, who }: Props) {
       )}
 
       {reading.length > 0 && (
-        <Card title="Worth a look" right={<button onClick={() => go('Library')} className="link">all</button>}>
+        <Card title="Worth a look" right={<button onClick={() => go('Library')} className="link">See all</button>}>
           <ul>
             {reading.map((r) => (
               <li key={r.id}>
